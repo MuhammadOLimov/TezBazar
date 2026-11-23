@@ -1,0 +1,247 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 120)) &&
+             data.languageCode in ['uz', 'ru', 'en'] &&
+             data.preferredDistrict is string && data.preferredDistrict.size() >= 1 && data.preferredDistrict.size() <= 60 &&
+             data.loyaltyPoints is int && data.loyaltyPoints >= 0 && data.loyaltyPoints <= 10000000 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidCartEntry(data) {
+      return data.productId is string && data.productId.size() >= 1 && data.productId.size() <= 64 &&
+             data.titleUz is string && data.titleUz.size() >= 1 && data.titleUz.size() <= 120 &&
+             data.titleRu is string && data.titleRu.size() >= 1 && data.titleRu.size() <= 120 &&
+             data.titleEn is string && data.titleEn.size() >= 1 && data.titleEn.size() <= 120 &&
+             data.categoryId is string && data.categoryId.size() >= 1 && data.categoryId.size() <= 40 &&
+             data.unitPriceUzs is int && data.unitPriceUzs > 0 && data.unitPriceUzs <= 1000000000 &&
+             data.quantity is int && data.quantity >= 1 && data.quantity <= 99 &&
+             data.imageKey is string && data.imageKey.size() >= 1 && data.imageKey.size() <= 64 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidOrderRecord(data) {
+      return data.orderNumber is string && data.orderNumber.size() >= 4 && data.orderNumber.size() <= 24 &&
+             data.status in ['PLACED', 'PREPARING', 'ON_THE_WAY', 'ARRIVING', 'DELIVERED', 'CANCELLED'] &&
+             data.itemsSummary is string && data.itemsSummary.size() >= 1 && data.itemsSummary.size() <= 500 &&
+             data.itemCount is int && data.itemCount >= 1 && data.itemCount <= 200 &&
+             data.subtotalUzs is int && data.subtotalUzs >= 0 && data.subtotalUzs <= 1000000000 &&
+             data.deliveryFeeUzs is int && data.deliveryFeeUzs >= 0 && data.deliveryFeeUzs <= 10000000 &&
+             data.discountUzs is int && data.discountUzs >= 0 && data.discountUzs <= 1000000000 &&
+             data.totalUzs is int && data.totalUzs > 0 && data.totalUzs <= 1000000000 &&
+             data.paymentMethod in ['UZCARD', 'HUMO', 'CASH'] &&
+             (!('cardLastFour' in data) || (data.cardLastFour is string && data.cardLastFour.size() <= 4)) &&
+             data.district is string && data.district.size() >= 1 && data.district.size() <= 60 &&
+             data.addressLine is string && data.addressLine.size() >= 3 && data.addressLine.size() <= 160 &&
+             data.courierName is string && data.courierName.size() >= 1 && data.courierName.size() <= 60 &&
+             data.courierPhone is string && data.courierPhone.size() >= 1 && data.courierPhone.size() <= 30 &&
+             data.courierVehicle is string && data.courierVehicle.size() >= 1 && data.courierVehicle.size() <= 40 &&
+             (!('deliveryType' in data) || data.deliveryType in ['COURIER', 'PICKUP_POINT']) &&
+             (!('pickupPointName' in data) || (data.pickupPointName is string && data.pickupPointName.size() <= 120)) &&
+             (data.routeProgress is float || data.routeProgress is int) && data.routeProgress >= 0.0 && data.routeProgress <= 1.0 &&
+             data.etaMinutes is int && data.etaMinutes >= 0 && data.etaMinutes <= 180 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidSavedAddress(data) {
+      return data.label is string && data.label.size() >= 1 && data.label.size() <= 40 &&
+             data.district is string && data.district.size() >= 1 && data.district.size() <= 60 &&
+             data.streetAddress is string && data.streetAddress.size() >= 3 && data.streetAddress.size() <= 160 &&
+             (!('entrance' in data) || (data.entrance is string && data.entrance.size() <= 20)) &&
+             (!('latitude' in data) || ((data.latitude is float || data.latitude is int) && data.latitude >= -90.0 && data.latitude <= 90.0)) &&
+             (!('longitude' in data) || ((data.longitude is float || data.longitude is int) && data.longitude >= -180.0 && data.longitude <= 180.0)) &&
+             data.primaryAddress is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidPaymentCard(data) {
+      return data.brand in ['UZCARD', 'HUMO'] &&
+             data.maskedNumber is string && data.maskedNumber.size() >= 8 && data.maskedNumber.size() <= 32 &&
+             data.lastFour is string && data.lastFour.size() == 4 &&
+             data.expiry is string && data.expiry.size() == 5 &&
+             data.holderName is string && data.holderName.size() >= 1 && data.holderName.size() <= 60 &&
+             data.primaryCard is bool &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidAiProfile(data) {
+      return data.topCategories is list && data.topCategories.size() <= 10 &&
+             (data.topCategories.size() == 0 || data.topCategories[0] is string) &&
+             data.tasteSummary is string && data.tasteSummary.size() <= 400 &&
+             data.recentQueries is list && data.recentQueries.size() <= 10 &&
+             (data.recentQueries.size() == 0 || data.recentQueries[0] is string) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    // Read-only marketplace catalog for authenticated users
+    match /catalog/{productId} {
+      allow get: if isSignedIn() && isValidId(productId);
+      allow list: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Strictly isolated per-user root profile
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'languageCode', 'preferredDistrict', 'loyaltyPoints', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'languageCode', 'preferredDistrict', 'loyaltyPoints', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'email', 'languageCode', 'preferredDistrict', 'loyaltyPoints', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      // Per-user cart items
+      match /cart/{productId} {
+        allow get: if isOwner(userId) && isValidId(productId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         incoming().productId == productId &&
+                         incoming().keys().hasAll(['productId', 'titleUz', 'titleRu', 'titleEn', 'categoryId', 'unitPriceUzs', 'quantity', 'imageKey', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['productId', 'titleUz', 'titleRu', 'titleEn', 'categoryId', 'unitPriceUzs', 'quantity', 'imageKey', 'createdAt', 'updatedAt']) &&
+                         isValidCartEntry(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(productId) &&
+                         incoming().productId == existing().productId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidCartEntry(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['quantity', 'unitPriceUzs', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(productId);
+      }
+
+      // Per-user orders & live courier tracking
+      match /orders/{orderId} {
+        allow get: if isOwner(userId) && isValidId(orderId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(orderId) &&
+                         incoming().status == 'PLACED' &&
+                         incoming().keys().hasAll(['orderNumber', 'status', 'itemsSummary', 'itemCount', 'subtotalUzs', 'deliveryFeeUzs', 'discountUzs', 'totalUzs', 'paymentMethod', 'district', 'addressLine', 'courierName', 'courierPhone', 'courierVehicle', 'routeProgress', 'etaMinutes', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['orderNumber', 'status', 'itemsSummary', 'itemCount', 'subtotalUzs', 'deliveryFeeUzs', 'discountUzs', 'totalUzs', 'paymentMethod', 'cardLastFour', 'district', 'addressLine', 'courierName', 'courierPhone', 'courierVehicle', 'deliveryType', 'pickupPointName', 'routeProgress', 'etaMinutes', 'createdAt', 'updatedAt']) &&
+                         isValidOrderRecord(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(orderId) &&
+                         !(existing().status in ['DELIVERED', 'CANCELLED']) &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidOrderRecord(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['status', 'routeProgress', 'etaMinutes', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(orderId);
+      }
+
+      // Per-user saved addresses
+      match /addresses/{addressId} {
+        allow get: if isOwner(userId) && isValidId(addressId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(addressId) &&
+                         incoming().keys().hasAll(['label', 'district', 'streetAddress', 'primaryAddress', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['label', 'district', 'streetAddress', 'entrance', 'latitude', 'longitude', 'primaryAddress', 'createdAt', 'updatedAt']) &&
+                         isValidSavedAddress(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(addressId) &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidSavedAddress(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['label', 'district', 'streetAddress', 'entrance', 'latitude', 'longitude', 'primaryAddress', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(addressId);
+      }
+
+      // Per-user masked payment cards (Uzcard / Humo)
+      match /payment_methods/{cardId} {
+        allow get: if isOwner(userId) && isValidId(cardId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(cardId) &&
+                         incoming().keys().hasAll(['brand', 'maskedNumber', 'lastFour', 'expiry', 'holderName', 'primaryCard', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['brand', 'maskedNumber', 'lastFour', 'expiry', 'holderName', 'primaryCard', 'createdAt', 'updatedAt']) &&
+                         isValidPaymentCard(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(cardId) &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidPaymentCard(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['primaryCard', 'holderName', 'expiry', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(cardId);
+      }
+
+      // Per-user AI taste profile
+      match /ai_profiles/{profileId} {
+        allow get: if isOwner(userId) && isValidId(profileId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(profileId) &&
+                         incoming().keys().hasAll(['topCategories', 'tasteSummary', 'recentQueries', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['topCategories', 'tasteSummary', 'recentQueries', 'createdAt', 'updatedAt']) &&
+                         isValidAiProfile(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(profileId) &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidAiProfile(incoming()) &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['topCategories', 'tasteSummary', 'recentQueries', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(profileId);
+      }
+    }
+  }
+}

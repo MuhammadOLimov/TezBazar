@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+    <string name="firestore_database_id" translatable="false">ai-studio-android-tezbazar-16d1f501-350c-4694-82cd-4e3ae9a5b157</string>
+    <string name="recaptcha_site_key" translatable="false">6LdLbisuAAAAALJoIDOnB121AXJ6Y4Jqr3jo7c4v</string>
+</resources>

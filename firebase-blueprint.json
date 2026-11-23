@@ -1,0 +1,157 @@
+{
+  "entities": {
+    "CatalogProduct": {
+      "title": "CatalogProduct",
+      "description": "Read-only marketplace product entry partitioned for high-scale catalog browsing.",
+      "type": "object",
+      "properties": {
+        "titleUz": { "type": "string", "description": "Product name in Uzbek (Latin)" },
+        "titleRu": { "type": "string", "description": "Product name in Russian" },
+        "titleEn": { "type": "string", "description": "Product name in English" },
+        "categoryId": { "type": "string", "description": "Category identifier" },
+        "priceUzs": { "type": "integer", "description": "Price in Uzbekistani Som" },
+        "popularityScore": { "type": "integer", "description": "Popularity ranking score for cursor pagination" }
+      },
+      "required": ["titleUz", "titleRu", "titleEn", "categoryId", "priceUzs"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated shopper profile with language preference and loyalty tier.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Owner Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "Shopper full name" },
+        "email": { "type": "string", "description": "Google account email" },
+        "languageCode": { "type": "string", "enum": ["uz", "ru", "en"], "description": "Active 3-language mode" },
+        "preferredDistrict": { "type": "string", "description": "Selected delivery district in Uzbekistan" },
+        "loyaltyPoints": { "type": "integer", "description": "Accumulated TezBazar bonus points" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["userId", "displayName", "languageCode", "preferredDistrict", "loyaltyPoints", "createdAt", "updatedAt"]
+    },
+    "CartEntry": {
+      "title": "CartEntry",
+      "description": "Per-user cart line item synced across sessions.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "description": "Catalog product ID" },
+        "titleUz": { "type": "string" },
+        "titleRu": { "type": "string" },
+        "titleEn": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "unitPriceUzs": { "type": "integer" },
+        "quantity": { "type": "integer" },
+        "imageKey": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "titleUz", "titleRu", "titleEn", "categoryId", "unitPriceUzs", "quantity", "imageKey", "createdAt", "updatedAt"]
+    },
+    "OrderRecord": {
+      "title": "OrderRecord",
+      "description": "User order document with live courier telemetry and 5-stage tracking state.",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string" },
+        "status": { "type": "string", "enum": ["PLACED", "PREPARING", "ON_THE_WAY", "ARRIVING", "DELIVERED", "CANCELLED"] },
+        "itemsSummary": { "type": "string" },
+        "itemCount": { "type": "integer" },
+        "subtotalUzs": { "type": "integer" },
+        "deliveryFeeUzs": { "type": "integer" },
+        "discountUzs": { "type": "integer" },
+        "totalUzs": { "type": "integer" },
+        "paymentMethod": { "type": "string", "enum": ["UZCARD", "HUMO", "CASH"] },
+        "cardLastFour": { "type": "string" },
+        "district": { "type": "string" },
+        "addressLine": { "type": "string" },
+        "courierName": { "type": "string" },
+        "courierPhone": { "type": "string" },
+        "courierVehicle": { "type": "string" },
+        "deliveryType": { "type": "string", "enum": ["COURIER", "PICKUP_POINT"] },
+        "pickupPointName": { "type": "string" },
+        "routeProgress": { "type": "number" },
+        "etaMinutes": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["orderNumber", "status", "itemsSummary", "itemCount", "subtotalUzs", "deliveryFeeUzs", "discountUzs", "totalUzs", "paymentMethod", "district", "addressLine", "courierName", "courierPhone", "courierVehicle", "routeProgress", "etaMinutes", "createdAt", "updatedAt"]
+    },
+    "SavedAddress": {
+      "title": "SavedAddress",
+      "description": "User delivery address in Uzbekistan.",
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "district": { "type": "string" },
+        "streetAddress": { "type": "string" },
+        "entrance": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "primaryAddress": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["label", "district", "streetAddress", "primaryAddress", "createdAt", "updatedAt"]
+    },
+    "SavedPaymentCard": {
+      "title": "SavedPaymentCard",
+      "description": "Masked Uzcard or Humo payment card metadata (no raw PAN or CVV).",
+      "type": "object",
+      "properties": {
+        "brand": { "type": "string", "enum": ["UZCARD", "HUMO"] },
+        "maskedNumber": { "type": "string" },
+        "lastFour": { "type": "string" },
+        "expiry": { "type": "string" },
+        "holderName": { "type": "string" },
+        "primaryCard": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["brand", "maskedNumber", "lastFour", "expiry", "holderName", "primaryCard", "createdAt", "updatedAt"]
+    },
+    "AiTasteProfile": {
+      "title": "AiTasteProfile",
+      "description": "Per-user AI preference and search signal profile.",
+      "type": "object",
+      "properties": {
+        "topCategories": { "type": "array" },
+        "tasteSummary": { "type": "string" },
+        "recentQueries": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["topCategories", "tasteSummary", "recentQueries", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/catalog/{productId}": {
+      "schema": { "$ref": "#/entities/CatalogProduct" },
+      "description": "Public read-only marketplace catalog."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile document isolated by UID."
+    },
+    "/users/{userId}/cart/{productId}": {
+      "schema": { "$ref": "#/entities/CartEntry" },
+      "description": "User cart items."
+    },
+    "/users/{userId}/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderRecord" },
+      "description": "User orders and live courier tracking state."
+    },
+    "/users/{userId}/addresses/{addressId}": {
+      "schema": { "$ref": "#/entities/SavedAddress" },
+      "description": "User saved delivery addresses."
+    },
+    "/users/{userId}/payment_methods/{cardId}": {
+      "schema": { "$ref": "#/entities/SavedPaymentCard" },
+      "description": "Masked Uzcard/Humo card metadata."
+    },
+    "/users/{userId}/ai_profiles/{profileId}": {
+      "schema": { "$ref": "#/entities/AiTasteProfile" },
+      "description": "User AI taste profile and query signals."
+    }
+  }
+}
